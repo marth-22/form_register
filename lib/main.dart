@@ -1,5 +1,6 @@
-
 import 'package:flutter/material.dart';
+import 'models/user_model.dart';
+import 'services/user_service.dart';
 
 void main() => runApp(const MyApp());
 
@@ -10,355 +11,429 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Pendaftaran',
+      title: 'CRUD REST API',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         scaffoldBackgroundColor: const Color(0xFFEAF5FF),
         useMaterial3: true,
       ),
-      home: const FormPendaftaran(),
+      home: const UserPage(),
     );
   }
 }
 
-class FormPendaftaran extends StatefulWidget {
-  const FormPendaftaran({super.key});
+class UserPage extends StatefulWidget {
+  const UserPage({super.key});
 
   @override
-  State<FormPendaftaran> createState() => _FormPendaftaranState();
+  State<UserPage> createState() => _UserPageState();
 }
 
-class _FormPendaftaranState extends State<FormPendaftaran> {
-  final _formKey = GlobalKey<FormState>();
+class _UserPageState extends State<UserPage> {
+  final UserService service = UserService();
+  late Future<List<UserModel>> futureUsers;
 
-  final namaController = TextEditingController();
-  final hpController = TextEditingController();
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-
-  final namaFocus = FocusNode();
-  final hpFocus = FocusNode();
-  final emailFocus = FocusNode();
-  final passwordFocus = FocusNode();
-
-  String? jenisKelamin;
-  String? programStudi;
-  bool setuju = false;
-
-  final biru = const Color(0xFF64B5F6);
+  final Color biru = const Color(0xFF64B5F6);
 
   @override
-  void dispose() {
-    namaController.dispose();
-    hpController.dispose();
-    emailController.dispose();
-    passwordController.dispose();
-
-    namaFocus.dispose();
-    hpFocus.dispose();
-    emailFocus.dispose();
-    passwordFocus.dispose();
-
-    super.dispose();
+  void initState() {
+    super.initState();
+    futureUsers = service.getUsers();
   }
 
-  Widget input({
-    required String label,
-    required TextEditingController controller,
-    required FocusNode focus,
-    FocusNode? next,
-    bool password = false,
-    String? Function(String?)? validator,
-    TextInputType keyboard = TextInputType.text,
-  }) {
-    return TextFormField(
-      controller: controller,
-      focusNode: focus,
-      keyboardType: keyboard,
-      obscureText: password,
-      textInputAction:
-          next == null ? TextInputAction.done : TextInputAction.next,
-      onFieldSubmitted: (_) {
-        if (next != null) {
-          FocusScope.of(context).requestFocus(next);
-        } else {
-          FocusScope.of(context).unfocus();
-        }
-      },
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: 'Masukkan $label',
-        border: const OutlineInputBorder(),
-        filled: true,
-        fillColor: Colors.white,
-      ),
-      validator: validator,
+  void muatUlang() {
+    setState(() {
+      futureUsers = service.getUsers();
+    });
+  }
+
+  void pesan(String teks, {bool berhasil = true}) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(teks),
+          backgroundColor: berhasil ? Colors.green : Colors.red,
+        ),
+      );
+  }
+
+  Future<void> bukaForm({UserModel? user}) async {
+    final formKey = GlobalKey<FormState>();
+    final namaDepan = TextEditingController(
+      text: user?.first_name ?? '',
     );
-  }
+    final namaBelakang = TextEditingController(
+      text: user?.last_name ?? '',
+    );
+    final email = TextEditingController(
+      text: user?.email ?? '',
+    );
 
-  void daftar() {
-    if (!_formKey.currentState!.validate()) return;
-
-    if (jenisKelamin == null || programStudi == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pilih jenis kelamin dan program studi!'),
-        ),
-      );
-      return;
-    }
-
-    if (!setuju) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Silakan setujui Syarat & Ketentuan!'),
-        ),
-      );
-      return;
-    }
-
-    konfirmasiPendaftaran();
-  }
-
-  void konfirmasiPendaftaran() {
-    showDialog(
+    final hasil = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Konfirmasi Pendaftaran'),
-       content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Apakah data sudah benar?',
-              style: TextStyle(color: Colors.red),
+        title: Text(user == null ? 'Tambah Pengguna' : 'Edit Pengguna'),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: namaDepan,
+                  decoration: const InputDecoration(
+                    labelText: 'Nama Depan',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) =>
+                      value == null || value.trim().isEmpty
+                          ? 'Nama depan wajib diisi'
+                          : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: namaBelakang,
+                  decoration: const InputDecoration(
+                    labelText: 'Nama Belakang',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) =>
+                      value == null || value.trim().isEmpty
+                          ? 'Nama belakang wajib diisi'
+                          : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: email,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || !value.contains('@')) {
+                      return 'Masukkan email yang valid';
+                    }
+                    return null;
+                  },
+                ),
+              ],
             ),
-          ],
+          ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Periksa Lagi'),
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Batal'),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
 
-              ScaffoldMessenger.of(context)
-                ..hideCurrentSnackBar()
-                ..showSnackBar(
-                  const SnackBar(
-                    content: Text('Pendaftaran Berhasil!'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-
-              _formKey.currentState!.reset();
-              namaController.clear();
-              hpController.clear();
-              emailController.clear();
-              passwordController.clear();
-
-              setState(() {
-                jenisKelamin = null;
-                programStudi = null;
-                setuju = false;
-              });
+              Navigator.pop(dialogContext, true);
             },
-            child: const Text('Ya, Daftar'),
+            child: Text(user == null ? 'Simpan' : 'Perbarui'),
           ),
         ],
       ),
     );
+
+    if (hasil == true && mounted) {
+      try {
+        if (user == null) {
+          await service.createUser(
+            firstName: namaDepan.text.trim(),
+            lastName: namaBelakang.text.trim(),
+            email: email.text.trim(),
+          );
+          pesan('Pengguna berhasil ditambahkan!');
+        } else {
+          await service.updateUser(
+          id: user.id,
+          firstName: namaDepan.text.trim(),
+          lastName: namaBelakang.text.trim(),
+          email: email.text.trim(),
+        );
+        pesan('Pengguna berhasil diperbarui!');
+        }
+
+        muatUlang();
+      } catch (e) {
+        pesan('Gagal menyimpan data: $e', berhasil: false);
+      }
+    }
+
+    namaDepan.dispose();
+    namaBelakang.dispose();
+    email.dispose();
+  }
+
+  Future<void> hapusUser(UserModel user) async {
+    final konfirmasi = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Hapus Pengguna'),
+        content: Text(
+          'Apakah kamu yakin ingin menghapus '
+          '${user.first_name} ${user.last_name}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (konfirmasi != true || !mounted) return;
+
+    try {
+      await service.deleteUser(user.id);
+      pesan('Pengguna berhasil dihapus!');
+      muatUlang();
+    } catch (e) {
+      pesan('Gagal menghapus data: $e', berhasil: false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pendaftaran'),
+        title: const Text(
+          'Data Pengguna',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
         backgroundColor: biru,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            tooltip: 'Muat ulang',
+            onPressed: muatUlang,
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
       ),
       body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Container(
-            width: double.infinity,
-            constraints: const BoxConstraints(maxWidth: 500),
-            child: Card(
-              color: Colors.white,
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Form(
-                  key: _formKey,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: FutureBuilder<List<UserModel>>(
+            future: futureUsers,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
-                        'Akun Baru',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
+                      CircularProgressIndicator(),
+                      SizedBox(height: 12),
+                      Text('Memuat data pengguna...'),
+                    ],
+                  ),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.cloud_off,
+                          size: 60,
+                          color: Colors.red,
                         ),
-                      ),
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Gagal mengambil data',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${snapshot.error}',
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: muatUlang,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Coba Lagi'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
 
-                      input(
-                        label: 'Nama Lengkap',
-                        controller: namaController,
-                        focus: namaFocus,
-                        next: hpFocus,
-                        validator: (value) =>
-                            value == null || value.trim().isEmpty
-                                ? 'Nama tidak boleh kosong'
-                                : null,
-                      ),
-                      const SizedBox(height: 15),
+              final users = snapshot.data ?? [];
 
-                      input(
-                        label: 'Nomor HP',
-                        controller: hpController,
-                        focus: hpFocus,
-                        next: emailFocus,
-                        keyboard: TextInputType.phone,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Nomor HP tidak boleh kosong';
-                          }
-                          if (!RegExp(r'^[0-9]{10,15}$')
-                              .hasMatch(value)) {
-                            return 'Masukkan 10–15 digit angka';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 15),
+              if (users.isEmpty) {
+                return const Center(
+                  child: Text('Belum ada data pengguna.'),
+                );
+              }
 
-                      const Text(
-                        'Jenis Kelamin',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      RadioGroup<String>(
-                        groupValue: jenisKelamin,
-                        onChanged: (value) {
-                          setState(() => jenisKelamin = value);
-                        },
-                        child: const Column(
-                          children: [
-                            RadioListTile<String>(
-                              title: Text('Laki-laki'),
-                              value: 'Laki-laki',
+              return ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Card(
+                    color: Colors.white,
+                    elevation: 3,
+                    child: Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'CRUD REST API',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
                             ),
-                            RadioListTile<String>(
-                              title: Text('Perempuan'),
-                              value: 'Perempuan',
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Kelola data pengguna menggunakan ReqRes API.',
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.people,
+                                color: Colors.blue,
+                              ),
+                              const SizedBox(width: 8),
+                              Text('Total data: ${users.length}'),
+                              const Spacer(),
+                              FilledButton.icon(
+                                onPressed: () => bukaForm(),
+                                icon: const Icon(Icons.add),
+                                label: const Text('Tambah'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ...users.map(
+                    (user) => Card(
+                      color: Colors.white,
+                      elevation: 2,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 28,
+                              backgroundColor: const Color(0xFFD6EBFF),
+                              backgroundImage:
+                                  user.avatar.isNotEmpty
+                                      ? NetworkImage(user.avatar)
+                                      : null,
+                              child: user.avatar.isEmpty
+                                  ? const Icon(Icons.person)
+                                  : null,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${user.first_name} ${user.last_name}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    user.email,
+                                    style: const TextStyle(
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                  Text(
+                                    'ID: ${user.id}',
+                                    style: const TextStyle(
+                                      color: Colors.blueGrey,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            PopupMenuButton<String>(
+                              onSelected: (value) {
+                                if (value == 'edit') {
+                                  bukaForm(user: user);
+                                } else if (value == 'delete') {
+                                  hapusUser(user);
+                                }
+                              },
+                              itemBuilder: (context) => const [
+                                PopupMenuItem(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit, color: Colors.blue),
+                                      SizedBox(width: 8),
+                                      Text('Edit'),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.delete, color: Colors.red),
+                                      SizedBox(width: 8),
+                                      Text('Hapus'),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 10),
-
-                      DropdownButtonFormField<String>(
-                        value: programStudi,
-                        decoration: const InputDecoration(
-                          labelText: 'Program Studi',
-                          border: OutlineInputBorder(),
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                        hint: const Text('Pilih program studi'),
-                        items: const [
-                          'Sistem Informasi',
-                          'Matematika',
-                        ].map((item) {
-                          return DropdownMenuItem(
-                            value: item,
-                            child: Text(item),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() => programStudi = value);
-                        },
-                      ),
-                      const SizedBox(height: 15),
-
-                      input(
-                        label: 'Email',
-                        controller: emailController,
-                        focus: emailFocus,
-                        next: passwordFocus,
-                        keyboard: TextInputType.emailAddress,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Email tidak boleh kosong';
-                          }
-                          if (!value.contains('@')) {
-                            return 'Format email tidak valid';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 15),
-
-                      input(
-                        label: 'Password',
-                        controller: passwordController,
-                        focus: passwordFocus,
-                        password: true,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Password tidak boleh kosong';
-                          }
-                          if (value.length < 6) {
-                            return 'Password minimal 6 karakter';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 10),
-
-                      CheckboxListTile(
-                        contentPadding: EdgeInsets.zero,
-                        controlAffinity: ListTileControlAffinity.leading,
-                        title: const Text(
-                          'Saya menyetujui Syarat & Ketentuan',
-                        ),
-                        value: setuju,
-                        onChanged: (value) {
-                          setState(() => setuju = value ?? false);
-                        },
-                      ),
-                      const SizedBox(height: 15),
-
-                      GestureDetector(
-                        onTap: daftar,
-                        child: Container(
-                          padding: const EdgeInsets.all(15),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: biru,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            'Daftar',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            ),
+                ],
+              );
+            },
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => bukaForm(),
+        backgroundColor: biru,
+        foregroundColor: Colors.white,
+        tooltip: 'Tambah pengguna',
+        child: const Icon(Icons.add),
       ),
     );
   }
