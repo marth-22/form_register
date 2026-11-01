@@ -1,6 +1,6 @@
 
 class UserModel {
-  final int id;
+  final String id;
   final String email;
   final String first_name;
   final String last_name;
@@ -11,16 +11,22 @@ class UserModel {
     required this.email,
     required this.first_name,
     required this.last_name,
-    required this.avatar,
+    this.avatar = '',
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    // Data kontak berada di dalam properti "data"
+    final Map<String, dynamic> contact =
+        json['data'] is Map<String, dynamic>
+            ? json['data']
+            : json;
+
     return UserModel(
-      id: json['id'] ?? 0,
-      email: json['email'] ?? '',
-      first_name: json['first_name'] ?? '',
-      last_name: json['last_name'] ?? '',
-      avatar: json['avatar'] ?? '',
+      id: json['id']?.toString() ?? '',
+      email: contact['email']?.toString() ?? '',
+      first_name: contact['first_name']?.toString() ?? '',
+      last_name: contact['last_name']?.toString() ?? '',
+      avatar: contact['avatar']?.toString() ?? '',
     );
   }
 }
