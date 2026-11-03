@@ -10,43 +10,10 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  final searchController = TextEditingController();
-
-  static const navy = Color(0xFF071A35);
-  static const blue = Color(0xFF102D52);
-  static const cyan = Color(0xFF8BDCF5);
-  static const lightBlue = Color(0xFF2876A8);
-
-  List<dynamic> searchResults = [];
-  bool hasSearched = false;
-
-  void searchContacts() {
-    final keyword = searchController.text.trim().toLowerCase();
-
-    setState(() {
-      hasSearched = true;
-      searchResults = keyword.isEmpty
-          ? []
-          : contacts.where((c) =>
-              c.name.toLowerCase().contains(keyword) ||
-              c.phone.toLowerCase().contains(keyword) ||
-              c.email.toLowerCase().contains(keyword)).toList();
-    });
-  }
-
-  void clearSearch() {
-    searchController.clear();
-    setState(() {
-      searchResults = [];
-      hasSearched = false;
-    });
-  }
-
-  @override
-  void dispose() {
-    searchController.dispose();
-    super.dispose();
-  }
+  dynamic selectedContact;
+  final Color navy = const Color(0xFF071A35);
+  final Color blue = const Color(0xFF102D52);
+  final Color cyan = const Color(0xFF8BDCF5);
 
   @override
   Widget build(BuildContext context) {
@@ -60,9 +27,12 @@ class _SearchPageState extends State<SearchPage> {
             padding: const EdgeInsets.fromLTRB(24, 55, 24, 30),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [navy, blue, Color(0xFF174A78), lightBlue],
+                colors: [
+                  Color(0xFF071A35),
+                  Color(0xFF102D52),
+                  Color(0xFF174A78),
+                  Color(0xFF2876A8),
+                ],
               ),
               borderRadius: const BorderRadius.vertical(
                 bottom: Radius.circular(30),
@@ -80,58 +50,82 @@ class _SearchPageState extends State<SearchPage> {
                 Positioned(
                   right: -20,
                   top: -35,
-                  child: Icon(Icons.blur_on, size: 150,
-                      color: Colors.white.withOpacity(0.09)),
+                  child: Icon(
+                    Icons.blur_on,
+                    size: 150,
+                    color: Colors.white.withOpacity(0.09),
+                  ),
                 ),
                 Positioned(
                   right: 35,
                   top: 15,
-                  child: Icon(Icons.auto_awesome, size: 32,
-                      color: cyan.withOpacity(0.7)),
+                  child: Icon(
+                    Icons.auto_awesome,
+                    size: 32,
+                    color: cyan.withOpacity(0.7),
+                  ),
                 ),
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('FIND YOUR CONTACT',
-                        style: TextStyle(
-                          color: cyan, fontSize: 12,
-                          letterSpacing: 3, fontWeight: FontWeight.bold,
-                        )),
-                    SizedBox(height: 10),
-                    Text('Cari Kontak',
-                        style: TextStyle(
-                          color: Colors.white, fontSize: 27,
-                          fontWeight: FontWeight.bold,
-                        )),
-                    SizedBox(height: 7),
-                    Text('Temukan kontak yang kamu cari',
-                        style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    const Text(
+                      'FIND YOUR CONTACT',
+                      style: TextStyle(
+                        color: Colors.cyanAccent,
+                        fontSize: 12,
+                        letterSpacing: 3,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Cari Kontak',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 27,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    const Text(
+                      'Temukan kontak berdasarkan nama',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                    ),
                   ],
                 ),
               ],
             ),
           ),
 
-          // PENCARIAN DAN HASIL
+          // PENCARIAN DAN DETAIL
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Cari Kontak',
-                      style: TextStyle(
-                        color: navy, fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      )),
+                  const Text(
+                    'Cari Nama Kontak',
+                    style: TextStyle(
+                      color: Color(0xFF071A35),
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Masukkan nama, nomor telepon, atau email kontak.',
-                    style: TextStyle(color: Color(0xFF718096), fontSize: 13),
+                    'Masukkan nama kontak yang ingin dicari',
+                    style: TextStyle(
+                      color: Color(0xFF718096),
+                      fontSize: 13,
+                    ),
                   ),
                   const SizedBox(height: 16),
 
-                  // INPUT PENCARIAN
+                  // Dropdown
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -144,197 +138,197 @@ class _SearchPageState extends State<SearchPage> {
                         ),
                       ],
                     ),
-                    child: TextField(
-                      controller: searchController,
-                      onSubmitted: (_) => searchContacts(),
-                      decoration: InputDecoration(
-                        hintText: 'Ketik nama atau nomor kontak...',
-                        hintStyle: const TextStyle(fontSize: 13),
-                        prefixIcon: const Icon(Icons.search, color: lightBlue),
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: clearSearch,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 15, vertical: 17,
-                        ),
-                      ),
+                    child: Autocomplete<String>(
+                      optionsBuilder: (value) {
+                        if (value.text.isEmpty) {
+                          return const Iterable<String>.empty();
+                        }
+
+                        return contacts
+                            .map((contact) => contact.name)
+                            .where(
+                              (name) => name.toLowerCase().startsWith(
+                                    value.text.toLowerCase(),
+                                  ),
+                            );
+                      },
+                      onSelected: (name) {
+                        setState(() {
+                          selectedContact = contacts.firstWhere(
+                            (contact) => contact.name == name,
+                          );
+                        });
+                      },
+                      fieldViewBuilder: (
+                        context,
+                        controller,
+                        focusNode,
+                        onSubmitted,
+                      ) {
+                        return TextField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          onChanged: (_) {
+                            setState(() => selectedContact = null);
+                          },
+                          decoration: InputDecoration(
+                            hintText: 'Ketik disini...',
+                            prefixIcon: const Icon(
+                              Icons.search,
+                              color: Color(0xFF2876A8),
+                            ),
+                            suffixIcon: IconButton(
+                              icon: const Icon(Icons.close),
+                              onPressed: () {
+                                controller.clear();
+                                setState(() => selectedContact = null);
+                              },
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15),
+                              borderSide: BorderSide.none,
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                        );
+                      },
+                      optionsViewBuilder: (context, onSelected, options) {
+                        return Align(
+                          alignment: Alignment.topLeft,
+                          child: Material(
+                            elevation: 6,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              width: MediaQuery.of(context).size.width - 40,
+                              constraints: const BoxConstraints(maxHeight: 250),
+                              child: ListView(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                children: options.map((name) {
+                                  return ListTile(
+                                    leading: const Icon(
+                                      Icons.person,
+                                      color: Color(0xFF2876A8),
+                                    ),
+                                    title: Text(name),
+                                    onTap: () => onSelected(name),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
-                  const SizedBox(height: 13),
 
-                  // TOMBOL CARI
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [navy, lightBlue],
-                        ),
-                        borderRadius: BorderRadius.circular(13),
-                        boxShadow: [
-                          BoxShadow(
-                            color: blue.withOpacity(0.25),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: ElevatedButton.icon(
-                        onPressed: searchContacts,
-                        icon: const Icon(Icons.search, color: Colors.white),
-                        label: const Text('Cari',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            )),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(13),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 25),
 
-                  // HASIL PENCARIAN
-                  if (hasSearched) ...[
-                    Row(
-                      children: [
-                        const Expanded(
-                          child: Text('Hasil Pencarian',
-                              style: TextStyle(
-                                color: navy, fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              )),
-                        ),
-                        Text('${searchResults.length} Kontak',
-                            style: const TextStyle(
-                              color: lightBlue,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                            )),
-                      ],
+                  if (selectedContact != null) ...[
+                    const Text(
+                      'Detail Kontak',
+                      style: TextStyle(
+                        color: Color(0xFF071A35),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 13),
 
-                    if (searchController.text.trim().isEmpty)
-                      const Center(
-                        child: Text(
-                          'Masukkan kata kunci pencarian terlebih dahulu.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: const Color(0xFFDAE6F2),
                         ),
-                      )
-                    else if (searchResults.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(25),
-                          child: Column(
-                            children: [
-                              Icon(Icons.person_search, size: 65,
-                                  color: blue.withOpacity(0.35)),
-                              const SizedBox(height: 10),
-                              const Text('Kontak Tidak Ditemukan',
-                                  style: TextStyle(
-                                    color: blue,
-                                    fontWeight: FontWeight.bold,
-                                  )),
-                              const SizedBox(height: 5),
-                              const Text('Coba gunakan kata kunci lainnya.',
-                                  style: TextStyle(
-                                    color: Colors.grey, fontSize: 12,
-                                  )),
-                            ],
+                        boxShadow: [
+                          BoxShadow(
+                            color: navy.withOpacity(0.07),
+                            blurRadius: 12,
+                            offset: const Offset(0, 5),
                           ),
-                        ),
-                      )
-                    else
-                      ...searchResults.map((c) => Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFDAE6F2)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: navy.withOpacity(0.06),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.all(13),
-                          leading: CircleAvatar(
-                            radius: 23,
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          CircleAvatar(
+                            radius: 32,
                             backgroundColor: blue,
                             child: Text(
-                              c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
+                              selectedContact.name[0].toUpperCase(),
                               style: const TextStyle(
                                 color: Colors.white,
+                                fontSize: 28,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
-                          title: Text(c.name,
-                              style: const TextStyle(
-                                color: navy,
-                                fontWeight: FontWeight.bold,
-                              )),
-                          subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 5),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Telepon: ${c.phone}'),
-                                Text('Email: ${c.email}'),
-                              ],
+                          const SizedBox(height: 15),
+                          Text(
+                            selectedContact.name,
+                            style: const TextStyle(
+                              color: Color(0xFF071A35),
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ),
-                      )),
-                  ] else
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 30),
-                        child: Column(
-                          children: [
-                            Icon(Icons.search, size: 75,
-                                color: blue.withOpacity(0.3)),
-                            const SizedBox(height: 12),
-                            const Text('Temukan Kontakmu',
-                                style: TextStyle(
-                                  color: blue, fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                )),
-                            const SizedBox(height: 5),
-                            const Text(
-                              'Ketik kata kunci lalu tekan tombol Cari.',
-                              style: TextStyle(
-                                color: Color(0xFF718096), fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
+                          const SizedBox(height: 20),
+                          _info(Icons.phone, 'Telepon', selectedContact.phone),
+                          const SizedBox(height: 14),
+                          _info(Icons.email, 'Email', selectedContact.email),
+                          const SizedBox(height: 14),
+                          _info(
+                            Icons.category,
+                            'Kategori',
+                            selectedContact.category,
+                          ),
+                        ],
                       ),
                     ),
+                  ],
                 ],
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _info(IconData icon, String title, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: const Color(0xFF2876A8), size: 20),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Color(0xFF102D52),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Color(0xFF526477),
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
